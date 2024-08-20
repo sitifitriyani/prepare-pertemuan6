@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { Trash, SquarePen, PlusCircle, Search } from "lucide-react";
 import { KrjContext } from "../App";
+import Cookies from 'js-cookie'; 
 
 export default function Home() {
   const { keranjang, setKeranjang } = useContext(KrjContext);
@@ -11,36 +12,67 @@ export default function Home() {
   const [sortOrder, setSortOrder] = useState("asc");
   const [search, setSearch] = useState("");
 
+  // Ambil token dari cookies
+  const token = Cookies.get('token');
+
+  console.log(token)
+
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/products`)
-      .then((response) => response.json())
-      .then((products) => setproducttts(products));
-  }, []);
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/products`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Gagal mengambil data produk, status: " + response.status);
+        }
+        return response.json();
+      })
+      .then((products) => setproducttts(products))
+      .catch((error) => {
+        console.error("Error fetching products:", error.message);
+        alert("Terjadi masalah saat mengambil data produk. Silakan coba lagi.");
+      });
+  }, [token]);
 
   function handleDelete(product) {
     if (confirm("Apakah anda yakin akan menghapus produk ini?")) {
       fetch(`${import.meta.env.VITE_API_BASE_URL}/api/products/${product.id}`, {
         method: "DELETE",
+        headers:{
+          "Authorization": `Bearer ${token}`,
+        }
       })
         .then((response) => response.text())
         .then((message) => {
-          setproducttts((prevProducts) =>
-            prevProducts.filter((p) => p.id !== product.id)
-          );
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/products`, {
+            headers: { "Authorization": `Bearer ${token}` },
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("Gagal mengambil data produk, status: " + response.status);
+              }
+              return response.json();
+            })
+            .then((products) => setproducttts(products))
+            .catch((error) => {
+              console.error("Error fetching products:", error.message);
+              alert("Terjadi masalah saat mengambil data produk. Silakan coba lagi.");
+            });
           alert(message);
         });
     }
   }
 
   function saveUpdate() {
-    fetch(`http://localhost:3000/api/products/${updateproducttt.id}`, {
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/products/${updateproducttt.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(updateproducttt),
     })
-      .then((response) => response.text())
+      .then((response) => response.json())
       .then((message) => {
         setproducttts((prevProducttts) =>
           prevProducttts.map((p) =>
@@ -57,6 +89,7 @@ export default function Home() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(newproducttt),
     })
@@ -65,12 +98,10 @@ export default function Home() {
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/products`)
           .then((response) => response.json())
           .then((products) => setproducttts(products));
-
-        // setproducttts([...producttts, data.product]); // membuat objek produk baru dan menambahkannya ke array
-        // alert(data.message);
       });
     setNewproducttt(null);
   }
+
   const filterData = producttts
     .sort((a, b) => {
       if (sortOrder === "asc") {
@@ -80,11 +111,11 @@ export default function Home() {
       }
     })
     .filter((item) => {
-      // Pastikan item.name tidak null atau undefined sebelum menggunakan toLowerCase()
       return (
-        item?.name && item?.name.toLowerCase().includes(search.toLowerCase())
+        item.name && item.name.toLowerCase().includes(search.toLowerCase())
       );
     });
+
   return (
     <div>
       <div className="flex items-center mt-1 w-full p-3 gap-2">
