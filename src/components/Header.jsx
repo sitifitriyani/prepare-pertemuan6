@@ -9,7 +9,7 @@ export default function Header() {
     <header className=" w-full flex items-center justify-between bg-slate-100 shadow-lg px-4 py-4">
       <div className="flex w-1/2 items-center gap-4 ">
         <img src="vite.svg" alt="" />
-        <h1 className="">Nebula store</h1>
+        <h1 className=""> store</h1>
       </div>
       <nav className="flex w-1/2">
         <ul className="w-full flex justify-evenly gap-2">
